@@ -17,5 +17,5 @@ A linguagem escolhida foi o Matlab e a versão utilizada foi a 2020 com licença
 
 O projeto final da disciplina está sendo implementado e é um autocodificador para evidenciar as funcionalidades de redução de dimensionalidade e de remoção de ruído. A arquitetura do Autocodificador escolhida é a de redes Neurais, treinado com Backpropagation e taxa de aprendizado adaptativa baseada na heurística bar-delta.
 
- 
-[logo]: https://github.com/israeljsf95/Visao_Computacional_MESTRADO/tree/master/Matlab/resources/GUI.PNG "Logo Title Text 1"
+## Tela
+<img src = "https://github.com/israeljsf95/Visao_Computacional_MESTRADO/tree/master/Matlab/resources/GUI.PNG"/> 
