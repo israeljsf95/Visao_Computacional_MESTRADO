@@ -21,5 +21,5 @@ O projeto final da disciplina está sendo implementado e é um autocodificador p
 <img src = "https://github.com/israeljsf95/Visao_Computacional_MESTRADO/tree/master/Matlab/resources/GUI.PNG"
   alt = "Exemplo"
   style: "float: left; margin-right: 10px"
-  width = 300px;
+  width = "300px"
 /> 
