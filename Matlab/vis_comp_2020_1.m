@@ -22,7 +22,7 @@ function varargout = vis_comp_2020_1(varargin)
 
 % Edit the above text to modify the response to help vis_comp_2020_1
 
-% Last Modified by GUIDE v2.5 26-May-2020 23:38:10
+% Last Modified by GUIDE v2.5 20-Jun-2020 22:46:33
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1242,7 +1242,7 @@ function Translacao_Callback(hObject, eventdata, handles)
     auxiliar = zeros(size(fonte));
     
     prompt = {'dx:','dy:'};
-    dlgtitle = 'TranslaÃ§Ã£o';
+    dlgtitle = 'Translacao';
     dims = [1 35];
     definput = {'20','20'};
     answer = inputdlg(prompt,dlgtitle,dims,definput);
@@ -2808,4 +2808,532 @@ function FFT_Callback(hObject, eventdata, handles)
 % hObject    handle to FFT (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+end
+
+
+% --------------------------------------------------------------------
+function [Eroded] = erosao_israel(fonte, estruc_el)
+            
+    [linha, coluna]=size(estruc_el);  
+
+    % Matriz que guardara os processos         
+    Eroded = zeros(size(fonte, 1), size(fonte, 2));  
+
+    for i = ceil(linha/2):size(fonte, 1)-floor(linha/2) 
+        for j = ceil(coluna/2):size(fonte, 2)-floor(coluna/2) 
+
+            % captando a vizinhança do pixel centrado na coordenada i, j
+            pedaco_fonte = fonte(i-floor(linha/2):i+floor(linha/2), j-floor(coluna/2):j+floor(coluna/2));  
+
+            % Fazendo a imagem ser do tipo logica
+            vizinhanca = pedaco_fonte(logical(estruc_el));  
+
+            %comparo e atribuo o menor valor
+            Eroded(i, j) = min(vizinhanca(:));       
+        end
+    end
+  
+end
+
+function [Dilated] = dilacao_israel(fonte, estruc_el)
+
+    [linha, coluna]=size(estruc_el);  
+
+    % Matriz que guardara os processos         
+    Dilated = zeros(size(fonte, 1), size(fonte, 2));  
+
+    for i = ceil(linha/2):size(fonte, 1)-floor(linha/2) 
+        for j = ceil(coluna/2):size(fonte, 2)-floor(coluna/2) 
+
+            % captando a vizinhança do pixel centrado na coordenada i, j
+            pedaco_fonte = fonte(i-floor(linha/2):i+floor(linha/2), j-floor(coluna/2):j+floor(coluna/2));  
+
+            %  Fazendo a imagem ser do tipo logica
+            vizinhanca = pedaco_fonte(logical(estruc_el));  
+
+            %comparo e atribuo o menor valor 
+            Dilated(i, j) = max(vizinhanca(:));       
+        end
+    end
+
+end
+
+function [Result] = abertura_israel(fonte, estruc_el)
+
+    temp = erosao_israel(fonte, estruc_el);
+    Result = dilacao_israel(temp, estruc_el);
+end
+
+
+function [Result] = fechamento_israel(fonte, estruc_el)
+    
+    temp = dilacao_israel(fonte, estruc_el);
+    Result = erosao_israel(temp, estruc_el);
+end
+
+function Morfologia_Callback(hObject, eventdata, handles)
+% hObject    handle to Morfologia (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+end
+
+
+% --------------------------------------------------------------------
+function Segmentacao_Callback(hObject, eventdata, handles)
+% hObject    handle to Segmentacao (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+end
+
+
+% --------------------------------------------------------------------
+function Caracteristicas_Callback(hObject, eventdata, handles)
+% hObject    handle to Caracteristicas (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+end
+
+
+% --------------------------------------------------------------------
+function Erosao_Callback(hObject, eventdata, handles)
+% hObject    handle to Erosao (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    fonte = getimage(handles.axes1);
+    fonte = double(fonte);
+    %Verifica se tem imagem no axes1
+    if isempty(fonte)
+        
+        [impath1, user_canceled] = imgetfile;
+
+        if user_canceled
+            msgbox(sprintf('Cancelada pelo usuario!\nA operacao nao pode ser concluida'),'error','error');
+            return;
+        end
+        
+        fonte = imread(impath1);
+        axes(handles.axes1);
+        imshow(fonte);
+    end
+    
+    if size(fonte,3) == 3
+        fonte = (0.2989*fonte(:,:,1) + 0.5870*fonte(:,:,2) + 0.1140*fonte(:,:,3));
+    end
+    
+    
+    %teste para saber se a imagem e binaria ou nao, caso seja nao sera
+    %binarizada
+    if length(unique(fonte)) == 2
+        se = [0 1 0; 0 1 0; 0 1 0];
+        resultado = erosao_israel(fonte, se);
+        axes(handles.axes2);
+        imshow(uint8(255*resultado));
+    else
+        [~, p_fonte, K] = hist_imagem_isr(fonte);
+        K = reshape(K, 1, length(K));
+        T2 = limiar_otsu_isr2(p_fonte, K);
+        fonte = fonte > T2;
+        se = [0 1 0; 0 1 0; 0 1 0];
+        resultado = erosao_israel(fonte, se);
+        axes(handles.axes2);
+        imshow(uint8(255*resultado));
+    end
+    
+    
+end
+
+% --------------------------------------------------------------------
+function Dilacao_Callback(hObject, eventdata, handles)
+% hObject    handle to Dilacao (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    fonte = getimage(handles.axes1);
+    fonte = double(fonte);
+    %Verifica se tem imagem no axes1
+    if isempty(fonte)
+        
+        [impath1, user_canceled] = imgetfile;
+
+        if user_canceled
+            msgbox(sprintf('Cancelada pelo usuario!\nA operacao nao pode ser concluida'),'error','error');
+            return;
+        end
+        
+        fonte = imread(impath1);
+        axes(handles.axes1);
+        imshow(fonte);
+    end
+    
+    if size(fonte,3) == 3
+        fonte = (0.2989*fonte(:,:,1) + 0.5870*fonte(:,:,2) + 0.1140*fonte(:,:,3));
+    end
+    
+    %teste para saber se a imagem e binaria ou nao, caso seja nao sera
+    %binarizada
+    if length(unique(fonte)) == 2
+        se = [0 1 0; 0 1 0; 0 1 0];
+        resultado = dilacao_israel(fonte, se);
+        axes(handles.axes2);
+        imshow(uint8(255*resultado));
+    else
+        [~, p_fonte, K] = hist_imagem_isr(fonte);
+        K = reshape(K, 1, length(K));
+        T2 = limiar_otsu_isr2(p_fonte, K);
+        fonte = fonte > T2;
+        se = [0 1 0; 0 1 0; 0 1 0];
+        resultado = dilacao_israel(fonte, se);
+        axes(handles.axes2);
+        imshow(uint8(255*resultado));
+    end
+    
+end
+
+% --------------------------------------------------------------------
+function Abertura_Callback(hObject, eventdata, handles)
+% hObject    handle to Abertura (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    fonte = getimage(handles.axes1);
+    fonte = double(fonte);
+    %Verifica se tem imagem no axes1
+    if isempty(fonte)
+        
+        [impath1, user_canceled] = imgetfile;
+
+        if user_canceled
+            msgbox(sprintf('Cancelada pelo usuario!\nA operacao nao pode ser concluida'),'error','error');
+            return;
+        end
+        
+        fonte = imread(impath1);
+        axes(handles.axes1);
+        imshow(fonte);
+    end
+    
+    if size(fonte,3) == 3
+        fonte = (0.2989*fonte(:,:,1) + 0.5870*fonte(:,:,2) + 0.1140*fonte(:,:,3));
+    end
+    
+    %teste para saber se a imagem e binaria ou nao, caso seja nao sera
+    %binarizada
+    if length(unique(fonte)) == 2
+        se = [0 1 0; 0 1 0; 0 1 0];
+        resultado = abertura_israel(fonte, se);
+        axes(handles.axes2);
+        imshow(uint8(255*resultado));
+    else
+        [~, p_fonte, K] = hist_imagem_isr(fonte);
+        K = reshape(K, 1, length(K));
+        T2 = limiar_otsu_isr2(p_fonte, K);
+        fonte = fonte > T2;
+        se = [0 1 0; 0 1 0; 0 1 0];
+        resultado = abertura_israel(fonte, se);
+        axes(handles.axes2);
+        imshow(uint8(255*resultado));
+    end
+    
+end
+
+% --------------------------------------------------------------------
+function Fechamento_Callback(hObject, eventdata, handles)
+% hObject    handle to Fechamento (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    fonte = getimage(handles.axes1);
+    fonte = double(fonte);
+    %Verifica se tem imagem no axes1
+    if isempty(fonte)
+        
+        [impath1, user_canceled] = imgetfile;
+
+        if user_canceled
+            msgbox(sprintf('Cancelada pelo usuario!\nA operacao nao pode ser concluida'),'error','error');
+            return;
+        end
+        
+        fonte = imread(impath1);
+        axes(handles.axes1);
+        imshow(fonte);
+    end
+    
+    if size(fonte,3) == 3
+        fonte = (0.2989*fonte(:,:,1) + 0.5870*fonte(:,:,2) + 0.1140*fonte(:,:,3));
+    end
+    
+    %teste para saber se a imagem e binaria ou nao, caso seja nao sera
+    %binarizada
+    if length(unique(fonte)) == 2
+        se = [0 1 0; 0 1 0; 0 1 0];
+        resultado = fechamento_israel(fonte, se);
+        axes(handles.axes2);
+        imshow(uint8(255*resultado));
+    else
+        [~, p_fonte, K] = hist_imagem_isr(fonte);
+        K = reshape(K, 1, length(K));
+        T2 = limiar_otsu_isr2(p_fonte, K);
+        fonte = fonte > T2;
+        se = [0 1 0; 0 1 0; 0 1 0];
+        resultado = fechamento_israel(fonte, se);
+        axes(handles.axes2);
+        imshow(uint8(255*resultado));
+    end
+    
+    
+end
+
+
+% --------------------------------------------------------------------
+%Funcoes utilizadas no processo de segmentacao pelo método de Amostragem da
+%distribuicao de GIBBS
+function mult_img = cinza_2_multiniveis_israel(fonte, limiar)
+%Funcao que sera usada para criar uma limiarizacao inicial a ser usada 
+%no sistema de segmentacao
+
+    mult_img = zeros(size(fonte));
+    mult_img(fonte < limiar(1)) = 1;
+    n_limiar = length(limiar);
+    if (n_limiar > 1)
+        for i = 1:n_limiar - 1
+            mult_img(fonte >= limiar(i) & fonte <limiar(i+1)) = i + 1;
+        end
+        mult_img(fonte >= limiar(i+1)) = i + 2;
+    else
+        mult_img(fonte >= limiar(1)) = 2;
+    end
+end
+
+function [mu, stds] = estas_regiao(fonte, img_reg, n_classes)
+    
+%Esta funcao calcula as estatisticas de cada regiao da imagem associadas ao
+%aos labels iniciais
+
+    mu = zeros(size(n_classes, 1));
+    stds = mu;
+    for i = 1:n_classes
+            H = fonte(img_reg == i);
+            if ~isempty(H)
+                mu(i) = mean(H);
+                stds(i) = std(H);
+            else
+                mu(i) = 0;
+                stds(i) = 0;
+            end
+    end
+            
+end
+
+function energia = energia_total_israel(fonte, clus, mus, vars, i, j, label, beta)
+    %Calculo da Energia Total usada na maximização da Posterioris
+    energia = prob_logaritmica(fonte, mus, vars, i, j, label) + ...
+              energia_gibbs(clus, i, j, label, beta);
+end
+
+
+function p_lol = prob_logaritmica(img,mu,vars,i,j,label)
+% img é a imagem com os niveis de cinza
+p_lol = log((2.0*pi*vars(label)^0.5)) + ...
+    (img(i,j)-mu(label))^2/(2.0*vars(label));
+end
+
+function energia = energia_gibbs(img,i,j,label,beta)
+% img é a imagem com os nomes dos agrupamentos
+energia = 0;
+%Norte, sul, Leste, Oeste
+if (label == img(i-1,j)) 
+    energia = energia-beta;
+else
+    energia = energia+beta;
+end
+if (label == img(i,j+1)) 
+    energia = energia-beta;
+else
+    energia = energia+beta;
+end
+if (label == img(i+1,j)) 
+    energia = energia-beta;
+else
+    energia = energia+beta;
+end
+if (label == img(i,j-1)) 
+    energia = energia-beta;
+else
+    energia = energia+beta;
+end
+%Diagonais
+if (label == img(i-1,j-1)) 
+    energia = energia-beta;
+else
+    energia = energia+beta;
+end
+if (label == img(i-1,j+1)) 
+    energia = energia-beta;
+else
+    energia = energia+beta;
+end
+if (label == img(i+1,j+1)) 
+    energia = energia-beta;
+else
+    energia = energia+beta;
+end
+if (label == img(i+1,j-1)) 
+    energia = energia-beta;
+else
+    energia = energia+beta;
+end
+
+end
+
+function clust = gibbs_segment_israel(fonte, label, beta, n_regioes, iter)
+%
+
+fonte = padarray(fonte, [1 1], 'replicate', 'both');
+label = padarray(label, [1 1], 'replicate', 'both');
+[linha, coluna] = size(fonte);
+
+%Parâmetros da Têmpera Simulada
+T = 4; C = 0.97; 
+
+[mus, sigs] = estas_regiao(fonte(2:end-1, 2:end-1), ...
+                           label(2:end-1, 2:end-1), n_regioes);
+vars = (sigs + .01).^2; %para evitar erro numerico
+for i = 1:iter
+    %Amostrando um numero da distribuicao uniforme na faixa
+    %da linha e da coluna
+    U = random('Uniform', 0, 1, linha, coluna);
+    for i = 2:linha-1
+        for j = 2:coluna - 1
+            %Calculo Da Energia para cara regiao do Sistema (nossa Imagem)
+            ss = label(i,j);
+            soma_energia = 0;
+            e = zeros(n_regioes, 1);
+            for s = 1:n_regioes
+                e(s) = exp(-energia_total_israel(fonte, label, mus, vars,...
+                       i, j, s, beta))/T;
+                soma_energia = soma_energia + e(s);
+            end
+            %Iniciando de amostragem da Distribuicao de Energia de Gibbs
+            F = 0;
+            for s = 1:n_regioes
+                F = F + e(s)/soma_energia;
+                if F >= U(i,j)
+                    label(i,j) = s;
+                    break;
+                end
+            end
+        end
+    end
+    T = T*C;
+    [mus, sigs] = estas_regiao(fonte(2:end-1, 2:end-1), ...
+                           label(2:end-1, 2:end-1), n_regioes);
+    vars = (sigs + .01).^2; %para evitar erro numerico
+ 
+end
+   clust = label;                 
+end
+
+
+
+function Gibbs_Callback(hObject, eventdata, handles)
+% hObject    handle to Gibbs (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+%O metodo de amostragem de gibbs surge da perspectiva de se interpretar a 
+%imagem como um Campo Aleatorio de Markov, seguindo todas as formulacoes da
+%teoria de probabilidade e do processamento estocastico de Imagens. O
+%metodo diz que ao supormos a imagem com regioes distintas entre si, e
+%possível estimar as densidades de probabilidade de cada regiao. A escolha
+%da densidade de probabilidade das regioes como sendo as de gibbs é feita
+%devido a simplicidade de se trabalhar com o conceito de energia associado
+%a cada pixel da imagem. Uma vez que temos a imagem, e temos uma densidade
+%de probabilidade definida, é montado um problema de otimizacao em que
+%tentamos minimizar a probabilidade a posteriori do pixel pertencer a cada
+%uma das regioes. A forma que eu resolvi o problema de otimizacao foi
+%baseado na Tempera Simulada, em que, por analogia ao problema físico,
+%supomos que a superficie formada pelos pixels da imagem estão esquentados.
+%Esta suposicao é equivalente a dizer que cada pixel tem igual
+%probabilidade de ser amostrado a partir da distribuição original. A medida
+%em que a etapa de otimização é sendo feita, a temperatura vai diminuindo e
+%é esperado que no estado estável, a estrutura resfriada, a imagem resultan
+%te tenha ocupado as regiões que minimizam a configuracao de energia
+%inicial. 
+%Como todo problema de otimizacao, parametros iniciais sao necessarios para
+%que o algoritmo possa iniciar. Eu escolhi implementar com no maximo 5
+%limiares de pixels por imagem. Além disso, eu mostro o histograma da
+%imagem original porque na funcao cinza_2_multiniveis_israel, um mapa
+%inicial das regioes e criado. Eu crio os meus mapas me baseando no
+%histograma da imagem a ser segmentada, escolhendo os valores de pico, ou
+%os que eu ache que são mais relevantes para tal tarefa. Uma boa discussao
+%que é levantada é: Qual o melhor valor de beta? Os meus 1.5 funcionaram
+%bem nos meus testes, porém o pessoal diz que isso é um problema em aberto
+%e métodos de otimização deste parâmetro foram desenvolvidas. Daí as
+%ferramentas otimizam, ao mesmo tempo, a propabilidade a priori da regiao,
+%e o parâmetro beta. Os resultados são legais, mas, dentro do meu
+%entendimento, não faz muito sentido buscar por esse tipo de solução uma
+%vez que computacionalmente ela é custosa. A não ser que a precisão da
+%solução seja um fator pre ponderante!!!!
+%
+%
+
+
+
+
+
+
+    fonte = getimage(handles.axes1);
+    fonte = double(fonte);
+    %Verifica se tem imagem no axes1
+    if isempty(fonte)
+        
+        [impath1, user_canceled] = imgetfile;
+
+        if user_canceled
+            msgbox(sprintf('Cancelada pelo usuario!\nA operacao nao pode ser concluida'),'error','error');
+            return;
+        end
+        
+        fonte = imread(impath1);
+    end
+        
+    if size(fonte,3) == 3
+        fonte = (0.2989*fonte(:,:,1) + 0.5870*fonte(:,:,2) + 0.1140*fonte(:,:,3));
+    end
+    
+    axes(handles.axes1);
+    imshow(uint8(fonte));
+    
+    fonte = double(uint8(fonte));%garantindo que os niveis de cinza estao entre 0 - 255
+    [~, p_fonte, bins] = hist_imagem_isr(fonte);
+    axes(handles.axes3);
+    bar(bins, p_fonte, 'b'), grid on, title('Histograma - Fonte');
+    %Limiares inicias
+    prompt = {'lim1:','lim2:','lim3:', 'lim4:', 'lim5:'};
+    dlgtitle = 'Limiares';
+    dims = [1 35];
+    definput = {'0','0', '0', '0', '0'};
+    answer = inputdlg(prompt,dlgtitle,dims,definput);
+    lim1 = str2num(answer{1});
+    lim2 = str2num(answer{2});
+    lim3 = str2num(answer{3});
+    lim4 = str2num(answer{4});
+    lim5 = str2num(answer{5});
+    
+    lim = [lim1 lim2 lim3 lim4 lim5];
+    if sum(lim) < 0
+        return;
+    end
+    lim = lim(lim > 0 & lim <= 255); 
+    fonte_mult_level = cinza_2_multiniveis_israel(fonte, lim);
+    prompt = {'beta:','iter:'};
+    dlgtitle = 'Parametros de Otimizacao';
+    dims = [1 35];
+    definput = {'1.5','30'};
+    answer = inputdlg(prompt,dlgtitle,dims,definput);
+    beta = str2num(answer{1});%Parametro da PDF de Gibbs
+    iter = str2num(answer{2});%Numero de Iteracoes para rodar o Algoritmo
+    resultado = gibbs_segment_israel(fonte, fonte_mult_level, beta, ...
+                                    length(lim)+1, iter);
+    axes(handles.axes2);
+    imagesc(resultado),axis off, axis equal, colormap(gray);
+
+
 end
